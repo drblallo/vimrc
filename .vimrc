@@ -1,213 +1,134 @@
-set nocompatible              " be iMproved, required
-filetype off                  " required
+let CMAKE = "/home/massimo/Downloads/clion-2018.2/bin/cmake/linux/bin/cmake"
+let CPPCLANG = '/usr/local/bin/clang++'
+let NINJA = "Ninja"
+let MAKE = "make"
+let CCLANG = "/usr/local/bin/clang"
+let GCC = "/usr/bin/gcc"
+let GPP = "/usr/bin/g++"
+let MING_EXTRA = "-DCMAKE_SYSTEM_NAME=Windows -DCMAKE_FIND_ROOT_PATH=/usr/i686-w64-mingw32/ -DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=NEVER -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY"
 
-" set the runtime path to include Vundle and initialize
-set rtp+=~/.vim/bundle/Vundle.vim
-call vundle#begin()
-" alternatively, pass a path where Vundle should install plugins
-"call vundle#begin('~/some/path/here')
+let CMAKE_TYPE = 0
+let BUILD_DIRECTORY = "cmake-build-debug"
+let CPPCOMPILER = g:CPPCLANG
+let CCOMPILER = g:CCLANG
+let BUILD_TYPE = "Debug"
+let EXTRA_CONFIG = "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
+let GENERATOR = "Ninja"
 
-Plugin 'gmarik/Vundle.vim'
-Plugin 'tpope/vim-surround'
-Plugin 'tpope/vim-fugitive'
-Plugin 'Valloric/YouCompleteMe'
-Plugin 'terryma/vim-multiple-cursors'
-Plugin 'dolph/vim-colors-solarized-black'
-Plugin 'vim-airline/vim-airline'
-Plugin 'vim-airline/vim-airline-themes'
-Plugin 'scrooloose/nerdcommenter'
-Plugin 'kien/ctrlp.vim'
-Plugin 'vim-scripts/Conque-GDB'
-Plugin 'mhinz/vim-signify'
-Plugin 'rdnetto/YCM-Generator'
-Plugin 'idbrii/AsyncCommand'
-Plugin 'vim-syntastic/syntastic'
-Plugin 'jeaye/color_coded'
-Plugin 'takac/vim-hardtime'
-Plugin 'jiangmiao/auto-pairs'
-Plugin 'guns/xterm-color-table.vim'
-
-" let Vundle manage Vundle, required
-" All of your Plugins must be added before the following line
-call vundle#end()            " required
-filetype plugin indent on    " required
-" To ignore plugin indent changes, instead use:
-"filetype plugin on
-"
-" Brief help
-" :PluginList       - lists configured plugins
-" :PluginInstall    - installs plugins; append `!` to update or just :PluginUpdate
-" :PluginSearch foo - searches for foo; append `!` to refresh local cache
-" :PluginClean      - confirms removal of unused plugins; append `!` to auto-approve removal
-"
-" see :h vundle for more details or wiki for FAQ
-" Put your non-Plugin stuff after this line
-
-
-"YOU COMPLETE ME
-let g:ycm_confirm_extra_conf=0
-let g:ycm_show_diagnostics_ui = 0
-nnoremap <F3> :YcmCompleter GoToDefinition<cr>
-nnoremap <F2> :YcmCompleter GoToDeclaration<cr>
-let g:ycm_autoclose_preview_window_after_insertion = 1
-set completeopt-=preview
-
-"SYNTASTIC
-let g:syntastic_c_clang_check_post_args = ""
-let g:syntastic_cpp_clang_check_post_args = ""
-let g:syntastic_c_checkers = ["clang_check"]
-let g:syntastic_cpp_checkers = ["clang_check"]
-let g:syntastic_cpp_clang_tidy_post_args = ""
-set statusline+=%#warningmsg#
-set statusline+=%{SyntasticStatuslineFlag()}
-set statusline+=%*
-let g:syntastic_cpp_compiler = "clang"
-let g:syntastic_c_compiler = "clang"
-let g:syntastic_cpp_compiler_exec = "/usr/local/bin/clang++"
-let g:syntastic_c_compiler_exec = "/usr/local/bin/clang"
-let g:syntastic_cpp_check_header = 1
-let g:syntastic_cpp_auto_refresh_includes = 1
-let g:syntastic_mode_map = { 'mode': 'passive', 'active_filetypes': [],'passive_filetypes': [] }
-
-let g:syntastic_always_populate_loc_list = 1
-let g:syntastic_auto_loc_list = 1
-let g:syntastic_check_on_open = 1
-let g:syntastic_check_on_wq = 0
-
-set exrc
-set secure
-set autoread
-
-"CTRLP
-let g:ctrlp_user_command = ['.git/', 'git --git-dir=%s/.git ls-files -oc --exclude-standard']
-let g:ctrlp_working_path_mode = '0'
-
-augroup project
-    autocmd!
-    autocmd BufRead,BufNewFile *.h,*.c set filetype=c.doxygen
-augroup END
-
-"THEME
-let &path.="src/,include/,/usr/include/AL,"
-set t_Co=256
-let g:solarized_termcolors = 256
-syntax enable
-set background=dark
-colorscheme solarized
-let g:airline_theme='jellybeans'
-let g:airline#extensions#tabline#enabled = 1
-set ttimeoutlen=100
-
-
-"CONQUE
-let g:ConqueTerm_StartMessages = 0
-let g:ConqueTerm_Color = 0
-let g:ConqueTerm_CloseOnEnd = 1
-let g:ConqueTerm_Interrupt = '<C-g><C-c>'
-let g:ConqueTerm_ReadUnfocused = 1
-
-set includeexpr=substitute(v:fname,'\\.','/','g')
-set backspace=2
-
-set number
-
-set tabstop=4
-set softtabstop=4
-set shiftwidth=4
-set noexpandtab
-let mapleader=","
-
-nnoremap <leader>gn :bn<cr>
-nnoremap <leader>gp :bp<cr>
-nnoremap <leader>gd :bd<cr>
-
-map <C-h> <C-w>h
-map <C-j> <C-w>j
-map <C-k> <C-w>k
-map <C-l> <C-w>l
-set fillchars+=vert:\ 
-
-autocmd BufWritePost *.cpp silent !clang-format -i <afile> 
-autocmd BufWritePost *.hpp silent !clang-format -i <afile> 
-autocmd BufWritePost *.c silent !clang-format -i <afile> 
-autocmd BufWritePost *.h silent !clang-format -i <afile> 
-
-"COLOR CODED
-let s:grey_blue = '#8a9597'
-let s:light_grey_blue = '#a0a8b0'
-let s:dark_grey_blue = '#34383c'
-let s:mid_grey_blue = '#64686c'
-let s:beige = '#ceb67f'
-let s:light_orange = '#ebc471'
-let s:yellow = '#e3d796'
-let s:violet = '#a982c8'
-let s:magenta = '#a933ac'
-let s:green = '#e0a96f'
-let s:lightgreen = '#c2c98f'
-let s:red = '#d08356'
-let s:cyan = '#74dad9'
-let s:darkgrey = '#1a1a1a'
-let s:grey = '#303030'
-let s:lightgrey = '#605958'
-let s:white = '#fffedc'
-let s:orange = '#d08356'
-
-exe 'hi Normal ctermfg=249'
-hi link CXXMethod Normal 
-hi link CMethod Normal
-hi link Function Normal
-hi link Constructor Normal 
-hi link Destructor Normal 
-hi link Member Normal
-
-
-exe 'hi Operator guifg='.s:light_orange .' guibg='.s:darkgrey .' gui=none'
-
-exe 'hi Type ctermfg=69 cterm=bold' 
-hi link Namespace Type 
-
-exe 'hi Number ctermfg=118'
-hi link Constant Number 
-
-exe 'hi Macro ctermfg=130' 
-exe 'hi Comment ctermfg=45'
-
-exe 'hi Variable ctermfg=243' 
-
-exe 'hi Statement ctermfg=204'
-hi link Conditional Statement
-
-exe 'hi String cterm=italic ctermfg=70'
-hi link PrePrc String 
-hi link Include String
-hi link Macro String
-hi link cDefine String
-hi link cPreCondit String
-hi link cPostCondit  String
-
-exe 'hi EnumConstant guifg='.s:lightgreen .' guibg='.s:darkgrey .' gui=none'
-
-set number relativenumber
-
-function! s:reloadPreCondid()
-	hi Namespace ctermfg=None
-	hi link Namespace Type
-	hi cPreCondit ctermfg=None
-	hi cPostCondit ctermfg=None
-	hi link cPostCondit String
-	hi link cPreCondit String
+function! s:setType(val, cmakeBuildBir, cCompiler, cppCompiler, buildType, extra, generator)
+	let g:CMAKE_TYPE = a:val
+	let g:BUILD_DIRECTORY = a:cmakeBuildBir
+	let g:CCOMPILER = a:cCompiler
+	let g:CPPCOMPILER = a:cppCompiler
+	let g:BUILD_TYPE = a:buildType
+	let g:EXTRA_CONFIG = a:extra
+	let g:GENERATOR = a:generator
 endfunction
 
-autocmd cursormoved * call s:reloadPreCondid() 
+function! s:getBuildCommand()
+	let s:command =  g:CMAKE . " -DCMAKE_BUILD_TYPE=" . g:BUILD_TYPE . " -DCMAKE_C_COMPILER=".g:CCOMPILER . " -DCMAKE_CXX_COMPILER=" . g:CPPCOMPILER . " -G " . g:GENERATOR . " " . g:EXTRA_CONFIG . " --build ../"
+	return s:command
+endfunction
 
-augroup numbertoggle
-  autocmd!
-  autocmd BufEnter,FocusGained,InsertLeave * set relativenumber
-  autocmd BufLeave,FocusLost,InsertEnter   * set norelativenumber
-augroup END
+function! s:Rebuild(waitForEnd)
+	let s:command = s:getBuildCommand()
+	let s:partial = "rm -r ./" . g:BUILD_DIRECTORY . " && mkdir ./" . g:BUILD_DIRECTORY . " && cd " . g:BUILD_DIRECTORY . " && " . s:command
+	silent execute "!echo \"" . s:partial . "\" > .file.txt"
+	call AppendRunAndOpenOnFailure( "./.file.txt")
 
-let g:hardtime_default_on = 1
-map <F4> :echo "hi<" . synIDattr(synID(line("."),col("."),1),"name") . '> trans<' . synIDattr(synID(line("."),col("."),0),"name") . "> lo<" . synIDattr(synIDtrans(synID(line("."),col("."),1)),"name") . ">" . " FG:" . synIDattr(synIDtrans(synID(line("."),col("."),1)),"fg#")<CR>
+	if a:waitForEnd == 1
+		exe "!echo rebuilded"  
+	endif
+	
+endfunction
 
-noremap ò o<ESC>
-noremap ç O<ESC>
+function! s:RunTest(param, executible, args)
+	call s:Run(a:param, a:executible, a:args)
+	call AppendRunOnNamedInternal("call RunOnBuffer()", "run")
+	call AppendRunOnNamedInternal("call ApplyTestSyntax()", "run")
+	call AppendRunOnNamedInternal(":lcd ".g:BUILD_DIRECTORY,"run")
+	call AppendRunOnNamedInternal(":w", "run")
+endfunction
+
+function! s:silentBuild(target)
+	let s:build = g:CMAKE . " --build " . g:BUILD_DIRECTORY . " --target " . a:target . " -j 4"
+	call AppendExternal(s:build)
+endfunction
+
+function! s:SilentRun(target, executible, args)
+	call s:silentBuild(a:target)
+
+	let s:exec = "./" . g:BUILD_DIRECTORY . "/" . a:executible . " " . a:args
+	call AppendRunOnSuccessExternal(s:exec, "run")
+endfunction
+
+function! s:Run(param, executible, args)
+	call s:SilentRun(a:param, a:executible, a:args)
+	call AppendOpenLast()
+endfunction
+
+function! s:RunD(target, executible, args)
+	let s:exec = "./" . g:BUILD_DIRECTORY . "/" . a:executible . " " . a:args
+
+	call s:silentBuild(a:target)
+	call AppendOpenOnFailure()
+	call AppendRunOnSuccessInternal("ConqueGdb -ex=r --args " . s:exec)
+	call AppendRunOnSuccessInternal(":lcd ".g:BUILD_DIRECTORY)
+endfunction
+
+function! s:coverage(val, cmakeBuildBir, cCompiler, cppCompiler, buildType, extra, generator)
+	silent call s:setType(a:val, a:cmakeBuildBir, a:cCompiler, a:cppCompiler, a:buildType, a:extra, a:generator)
+	silent call s:Rebuild(0)
+	silent let s:build = g:CMAKE . " --build " . g:BUILD_DIRECTORY . " --target runTest -j 4"
+	silent call AppendRunOnSuccessExternal(s:build)
+	call AppendOpenOnFailure()
+	silent call AppendRunOnSuccessExternal("bash coverage.sh")
+	!echo "creating coverage"
+endfunction
+
+function! s:generateCompilationDatabase()
+	silent execute "!rm -r cmake-build-cdatabase/" 
+	silent execute "!mkdir cmake-build-cdatabase" 
+	silent execute "!rm compile_commands.json"
+	execute "!cd cmake-build-cdatabase/ ; " . g:CMAKE . " ../ -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Debug; mv compile_commands.json ../"
+endfunction
+
+function! s:goToTest(name)
+	execute "vimgrep " . a:name . " test/src/*"	. " ../test/src/*"
+endfunction
+
+command! -nargs=0 CMDEBUG call s:setType(0, "cmake-build-debug-clang", g:CCLANG, g:CPPCLANG, "Debug", "", g:NINJA)
+command! -nargs=0 CMRELEASE call s:setType(1, "cmake-build-release-clang", g:CCLANG, g:CPPCLANG, "Release", "", g:NINJA)
+command! -nargs=0 CMASAN call s:setType(2, "cmake-build-asan", g:CCLANG, g:CPPCLANG, "Debug", "-DCULT_ASAN=ON", g:NINJA)
+command! -nargs=0 CMTSAN call s:setType(3, "cmake-build-tsan", g:CCLANG, g:CPPCLANG, "Debug", "-DCULT_TSAN=ON", g:NINJA)
+command! -nargs=0 CMUBSAN call s:setType(4, "cmake-build-ubsan", g:CCLANG, g:CPPCLANG, "Debug", "-DCULT_UBSAN=ON", g:NINJA)
+command! -nargs=0 CMMSAN call s:setType(5, "cmake-build-msan", g:CCLANG, g:CPPCLANG, "Debug", "-DCULT_MSAN=ON", g:NINJA)
+command! -nargs=0 CMWINDOWS call s:setType(6, "cmake-build-release-windows", "/usr/bin/x86_64-w64-mingw32-gcc-posix", "/usr/bin/x86_64-w64-mingw32-c++-posix", "Release", g:MING_EXTRA, g:NINJA)
+command! -nargs=0 COVERAGE call s:coverage(7, "cmake-build-coverage", g:GCC, g:GPP, "Debug", "-DCULT_COVERAGE=ON", g:NINJA)
+
+command! -nargs=0 REBUILD call s:Rebuild(1)
+command! -nargs=0 TALL call s:RunTest("runTest", "test/runTest", "")
+command! -nargs=0 TSUIT call s:RunTest("runTest", "test/runTest", GTestOption(1))
+command! -nargs=0 TONE call s:RunTest("runTest", "test/runTest", GTestOption(0))
+command! -nargs=0 RUN call s:Run("Cult", "Cult", "")
+command! -nargs=0 DTALL call s:RunD("runTest", "test/runTest", "")
+command! -nargs=0 DTSUIT call s:RunD("runTest", "test/runTest", GTestOption(1))
+command! -nargs=0 DTONE call s:RunD("runTest", "test/runTest", GTestOption(0))
+command! -nargs=0 DRUN call s:RunD("Cult", "Cult", "")
+command! -nargs=0 CCGENERATE call s:generateCompilationDatabase()
+command! -nargs=0 GOTOTEST call s:goToTest(expand("<cword>"))
+command! -nargs=0 CHANGEDIR call s:switchDir()
+
+nnoremap gt :vsp<cr>:GOTOTEST<cr>
+nnoremap <leader><leader>b :REBUILD<cr>
+nnoremap <leader><leader>r :RUN<cr>
+nnoremap <leader><leader>dr :DRUN<cr>
+nnoremap <leader><leader>ta :TALL<cr>
+nnoremap <leader><leader>dta :DTALL<cr>
+nnoremap <leader><leader>ts :TSUIT<cr>
+nnoremap <leader><leader>dts :DTSUIT<cr>
+nnoremap <leader><leader>to :TONE<cr>
+nnoremap <leader><leader>dto :DTONE<cr>
+nnoremap <leader><leader>s :SyntasticToggleMode<cr>
+nnoremap <leader><leader>cd :CHANGEDIR<cr>
+

@@ -6,6 +6,9 @@ let CCLANG = "/usr/local/bin/clang"
 let GCC = "/usr/bin/gcc"
 let GPP = "/usr/bin/g++"
 let MING_EXTRA = "-DCMAKE_SYSTEM_NAME=Windows -DCMAKE_FIND_ROOT_PATH=/usr/i686-w64-mingw32/ -DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=NEVER -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY"
+let ASAN_SUPP = "/home/massimo/CLionProjects/Cult/asan.supp"
+let LSAN_SUPP = "/home/massimo/CLionProjects/Cult/lsan.supp"
+let MSAN_BLACK_LIST = "/home/massimo/CLionProjects/Cult/msan.blacklist"
 
 let CMAKE_TYPE = 0
 let BUILD_DIRECTORY = "cmake-build-debug"
@@ -32,7 +35,7 @@ endfunction
 
 function! s:Rebuild(waitForEnd)
 	let s:command = s:getBuildCommand()
-	let s:partial = "rm -r ./" . g:BUILD_DIRECTORY . " && mkdir ./" . g:BUILD_DIRECTORY . " && cd " . g:BUILD_DIRECTORY . " && " . s:command
+	let s:partial = "rm -r ./" . g:BUILD_DIRECTORY . " ; mkdir ./" . g:BUILD_DIRECTORY . " && cd " . g:BUILD_DIRECTORY . " && " . s:command
 	silent execute "!echo \"" . s:partial . "\" > .file.txt"
 	call AppendRunAndOpenOnFailure( "./.file.txt")
 
@@ -43,10 +46,16 @@ function! s:Rebuild(waitForEnd)
 endfunction
 
 function! s:RunTest(param, executible, args)
-	call s:Run(a:param, a:executible, a:args)
+	call s:SilentRun(a:param, a:executible, a:args)
+	call AppendOpenLast()
+	call AppendRunOnFailureInternal("call ParseClangOutput()")
 	call AppendRunOnNamedInternal("call RunOnBuffer()", "run")
 	call AppendRunOnNamedInternal("call ApplyTestSyntax()", "run")
+	call AppendRunOnNamedInternal("call ColorizeLog()", "run")
 	call AppendRunOnNamedInternal(":lcd ".g:BUILD_DIRECTORY,"run")
+	call AppendRunOnNamedInternal(":w", "run")
+	call AppendOpenErrorFileIfExist()
+	call AppendInternal("call AsanParseBuffer()")
 	call AppendRunOnNamedInternal(":w", "run")
 endfunction
 
@@ -58,13 +67,18 @@ endfunction
 function! s:SilentRun(target, executible, args)
 	call s:silentBuild(a:target)
 
-	let s:exec = "./" . g:BUILD_DIRECTORY . "/" . a:executible . " " . a:args
+	let s:exec = " ./" . g:BUILD_DIRECTORY . "/" . a:executible . " " . a:args
 	call AppendRunOnSuccessExternal(s:exec, "run")
 endfunction
 
 function! s:Run(param, executible, args)
 	call s:SilentRun(a:param, a:executible, a:args)
 	call AppendOpenLast()
+	call AppendRunOnFailureInternal("call ParseClangOutput()")
+	call AppendRunOnNamedInternal("call ColorizeLog()", "run")
+	call AppendOpenErrorFileIfExist()
+	call AppendInternal("call AsanParseBuffer()")
+	call AppendRunOnNamedInternal(":w", "run")
 endfunction
 
 function! s:RunD(target, executible, args)
@@ -72,8 +86,10 @@ function! s:RunD(target, executible, args)
 
 	call s:silentBuild(a:target)
 	call AppendOpenOnFailure()
+	call AppendRunOnFailureInternal("call ParseClangOutput()")
 	call AppendRunOnSuccessInternal("ConqueGdb -ex=r --args " . s:exec)
 	call AppendRunOnSuccessInternal(":lcd ".g:BUILD_DIRECTORY)
+
 endfunction
 
 function! s:coverage(val, cmakeBuildBir, cCompiler, cppCompiler, buildType, extra, generator)
@@ -99,10 +115,10 @@ endfunction
 
 command! -nargs=0 CMDEBUG call s:setType(0, "cmake-build-debug-clang", g:CCLANG, g:CPPCLANG, "Debug", "", g:NINJA)
 command! -nargs=0 CMRELEASE call s:setType(1, "cmake-build-release-clang", g:CCLANG, g:CPPCLANG, "Release", "", g:NINJA)
-command! -nargs=0 CMASAN call s:setType(2, "cmake-build-asan", g:CCLANG, g:CPPCLANG, "Debug", "-DCULT_ASAN=ON", g:NINJA)
-command! -nargs=0 CMTSAN call s:setType(3, "cmake-build-tsan", g:CCLANG, g:CPPCLANG, "Debug", "-DCULT_TSAN=ON", g:NINJA)
-command! -nargs=0 CMUBSAN call s:setType(4, "cmake-build-ubsan", g:CCLANG, g:CPPCLANG, "Debug", "-DCULT_UBSAN=ON", g:NINJA)
-command! -nargs=0 CMMSAN call s:setType(5, "cmake-build-msan", g:CCLANG, g:CPPCLANG, "Debug", "-DCULT_MSAN=ON", g:NINJA)
+command! -nargs=0 CMASAN call s:setType(2, "cmake-build-asan", g:CCLANG, g:CPPCLANG, "Debug", "-DCULT_ASAN=ON ", g:NINJA)
+command! -nargs=0 CMTSAN call s:setType(3, "cmake-build-tsan", g:CCLANG, g:CPPCLANG, "Debug", "-DCULT_TSAN=ON ", g:NINJA)
+command! -nargs=0 CMUBSAN call s:setType(4, "cmake-build-ubsan", g:CCLANG, g:CPPCLANG, "Debug", "-DCULT_UBSAN=ON ", g:NINJA)
+command! -nargs=0 CMMSAN call s:setType(5, "cmake-build-msan", g:CCLANG, g:CPPCLANG, "Debug", "-DCULT_MSAN=ON -fsanitize-blacklist=" . g:MSAN_BLACK_LIST, g:NINJA)
 command! -nargs=0 CMWINDOWS call s:setType(6, "cmake-build-release-windows", "/usr/bin/x86_64-w64-mingw32-gcc-posix", "/usr/bin/x86_64-w64-mingw32-c++-posix", "Release", g:MING_EXTRA, g:NINJA)
 command! -nargs=0 COVERAGE call s:coverage(7, "cmake-build-coverage", g:GCC, g:GPP, "Debug", "-DCULT_COVERAGE=ON", g:NINJA)
 
@@ -118,8 +134,10 @@ command! -nargs=0 DRUN call s:RunD("Cult", "Cult", "")
 command! -nargs=0 CCGENERATE call s:generateCompilationDatabase()
 command! -nargs=0 GOTOTEST call s:goToTest(expand("<cword>"))
 command! -nargs=0 CHANGEDIR call s:switchDir()
+command! -nargs=* AddClass call s:addClass(<f-args>)
+command! -nargs=* AddTest call s:addTest(<f-args>)
 
-nnoremap gt :vsp<cr>:GOTOTEST<cr>
+nnoremap <leader><leader>gt :vsp<cr>:GOTOTEST<cr>
 nnoremap <leader><leader>b :REBUILD<cr>
 nnoremap <leader><leader>r :RUN<cr>
 nnoremap <leader><leader>dr :DRUN<cr>
@@ -132,3 +150,44 @@ nnoremap <leader><leader>dto :DTONE<cr>
 nnoremap <leader><leader>s :SyntasticToggleMode<cr>
 nnoremap <leader><leader>cd :CHANGEDIR<cr>
 
+let $ASAN_OPTIONS="suppressions=".g:ASAN_SUPP
+let $LSAN_OPTIONS="suppressions=".g:LSAN_SUPP
+
+exe "hi log ctermfg=" .  g:ColorString
+exe "hi logFile ctermfg=" . g:ColorType
+exe "hi atMethod ctermfg=" . g:ColorStatement
+exe "hi logWarning ctermfg=" . g:ColorNumber
+
+function! ColorizeLog()
+	syntax match log '\s*\(DEBUG\|INFO\|WARNING\): .*\s*'
+	syntax match logWarning '\s*WARNING: .*\s*'
+	syntax match atMethod '>.*at'
+	syntax match logFile ':\s\+\S\+\s*'
+endfunction
+
+function! s:findPathToTarget(folder, newClassName)
+endfunction
+
+function! s:addClass(folder, newClassName)
+	execute "!echo TARGET_SOURCES\\(".a:folder." PRIVATE src/".a:newClassName."\\) >> game/".a:folder."/CMakeLists.txt"
+	execute "vsp ./".a:folder."/src/".a:newClassName.".cpp"
+	execute "sp ./".a:folder."/include/".a:newClassName.".hpp"
+	normal icls
+	call UltiSnips#ExpandSnippet()
+endfunction
+
+function! s:addTest(testName)
+	execute "!echo TARGET_SOURCES\\(runTest PRIVATE src/".a:testName."\\) >> test/CMakeLists.txt"
+	execute "vsp ./test/src/".a:testName.".cpp"
+	normal itest
+
+endfunction
+
+exe "hi clangOutError ctermfg="g:ColorStatement
+exe "hi clangOutNote ctermfg="g:ColorNumber
+exe "hi clangOutFile ctermfg="g:ColorType
+function! ParseClangOutput()
+	syntax match clangOutError '\s\+error:\s\+'
+	syntax match clangOutNote '\s\+note:\s\+'
+	syntax match clangOutFile '\S\+:\d\+:\d\+:'
+endfunction
